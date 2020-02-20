@@ -1,12 +1,12 @@
 #!/bin/bash
-echo '------------------------------------'
-echo '| Setting up Wordpress Version 5.2 |'
-echo '------------------------------------'
-echo '|   Implementing the following:    |'
-echo '|        Apache Server 2.4+        |'
-echo '|        MySQL Version 8.0+        |'
-echo '|         PHP Version 7.2+         |'
-echo '------------------------------------'
+echo '     ------------------------------------'
+echo '     | Setting up Wordpress Version 5.2 |'
+echo '     ------------------------------------'
+echo '     |   Implementing the following:    |'
+echo '     |        Apache Server 2.4+        |'
+echo '     |        MySQL Version 8.0+        |'
+echo '     |         PHP Version 7.2+         |'
+echo '     ------------------------------------'
 sleep 5
 prerequisites=(https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm mysql80-community-release-el7-3.noarch.rpm oracle-php-release-el7)
 packages=(httpd php php-mysql php-cli php-gd mysql-community-server)
@@ -23,16 +23,35 @@ sudo firewall-cmd --permanent --add-service http
 sudo sed -i 's/# default-authentication-plugin=mysql_native_password/default-authentication-plugin=mysql_native_password/g' /etc/my.cnf
 sudo service mysqld start
 my_password=$(sudo grep 'temporary password' /var/log/mysqld.log)
-echo 'Enter new root MySQL password:'
+echo -e '\nEnter new root MySQL password:'
 read -s root_new_passw
-mysql -u root -p${my_password: -12} -e "ALTER USER root@localhost IDENTIFIED BY '$root_new_passw'"
-echo -e "n\ny\ny\ny\ny\n" | sudo mysql_secure_installation -p${my_password: -12}
-echo 'Enter the name for your Wordpress Database:'
+echo -e '\nConfirm new root MySQL password:'
+read -s root_new_passw_confirm
+while [ $root_new_passw != $root_new_passw_confirm ]
+do
+	echo -e '\nPasswords do not match.'
+	echo -e '\nEnter new root MySQL password:'
+	read -s root_new_passw
+	echo -e '\nConfirm new root MySQL password:'
+	read -s root_new_passw_confirm
+done
+mysql --connect-expired-password -u root -p${my_password: -12} -e "SET PASSWORD FOR root@localhost = '$root_new_passw'"
+echo -e "n\ny\ny\ny\ny\n" | sudo mysql_secure_installation -p$root_new_passw
+echo -e '\nEnter the name for your Wordpress Database:'
 read wp_db
-echo 'Enter the name for the Database User:'
+echo -e '\nEnter the name for the Database User:'
 read wp_user
-echo 'Enter the Databse User Password:'
+echo -e '\nEnter the Databse User Password:'
 read -s wp_passw
+echo -e '\nConfirm the Databse User Password:'
+read -s wp_passw_confirm
+while [ $wp_passw != $wp_passw_confirm ]
+do
+	echo -e '\nEnter the Databse User Password:'
+	read -s wp_passw
+	echo -e '\nConfirm the Databse User Password:'
+	read -s wp_passw_confirm
+done
 mysql -u root -p$root_new_passw -e "CREATE DATABASE $wp_db"
 mysql -u root -p$root_new_passw -e "CREATE USER $wp_user@localhost IDENTIFIED BY '$wp_passw'"
 mysql -u root -p$root_new_passw -e "GRANT ALL PRIVILEGES ON $wp_db.* TO $wp_user@localhost"
@@ -51,6 +70,10 @@ sudo service httpd restart
 sudo systemctl enable httpd
 sudo service mysqld restart
 sudo systemctl enable mysqld
-echo 'Rebooting in 10 seconds...'
-sleep 10
+secs=10
+while [ $secs -gt 0 ]; do
+   echo -ne "Rebooting in $secs seconds...\033[0K\r"
+   sleep 1
+   : $((secs--))
+done
 sudo reboot now
