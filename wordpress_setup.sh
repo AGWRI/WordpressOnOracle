@@ -34,7 +34,7 @@ read wp_user
 echo 'Enter the Databse User Password:'
 read -s wp_passw
 mysql -u root -p$root_new_passw -e "CREATE DATABASE $wp_db"
-mysql -u root -p$root_new_passw -e "CREATE USER $wp_user@localhost IDENTIFIED BY $wp_passw"
+mysql -u root -p$root_new_passw -e "CREATE USER $wp_user@localhost IDENTIFIED BY '$wp_passw'"
 mysql -u root -p$root_new_passw -e "GRANT ALL PRIVILEGES ON $wp_db.* TO $wp_user@localhost"
 mysql -u root -p$root_new_passw -e "FLUSH PRIVILEGES"
 sudo mv /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
